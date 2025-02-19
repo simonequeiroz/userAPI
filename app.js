@@ -6,7 +6,7 @@ import dotenv from "dotenv"; // Ambiente com arquivo .env
 
 import User from "./models/usuarioModel.js";
 
-dotenv.config(); // Carrega as variaveis de ambiente do arq .ENV
+dotenv.config(); // Carrega as variaveis de ambiente do arq. .ENV
 
 const app = express();
 
@@ -14,39 +14,40 @@ app.use(express.json());
 
 // Rota aberta
 app.get("/", (req, res) => {
-  res.status(200).json({ msg: "Bem vindo a nossa API!" });
+  res.status(200).json({ msg: "Bem vindo a nossa API! " });
 });
 
 // Rota privada
 app.get("/user/:id", checkToken, async (req, res) => {
-    const id = req.params.id;
+  const id = req.params.id;
 
-    const user = await User.findByid(id, "-password");
+  const user = await User.findById(id, "-password");
 
-    if (!user) {
-        return res. status(404).json({ msg: "usuário não encontrado!" });
-    }
+  if (!user) {
+    return res.status(404).json({ msg: "Usuário não encontrado!" });
+  }
 
-    res.status(200).json({ user });
+  res.status(200).json({ user });
 });
 
-// Midlewares (Checagem de token)
+// Midlewares (Checagem do Token)
 function checkToken(req, res, next) {
-    const authHeader = req.headers["authorization"];
-    const token = authHeader && authHeader.split("")[1]; // Extrai o JWT do cabeçalho
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1]; // Extrai o JWT do cabeçalho
 
-if (!token) return req.status(401).json({ msg: "Acesso Negado! "});
+  if (!token) return res.status(401).json({ msg: "Acesso Negado! " });
 
-try { 
+  try {
     const secret = process.env.SECRET;
 
     jwt.verify(token, secret); // Verifica se o Token é realmente válido
 
     next();
-} catch (err) {
-    res.status(400).json({ msg: "O Token é inválido!"});
+  } catch (err) {
+    res.status(400).json({ msg: "O Token é inválido!" });
+  }
 }
-}
+
 app.post("/auth/register", async (req, res) => {
   const { name, email, password, confirmpassword } = req.body;
 
@@ -80,7 +81,7 @@ app.post("/auth/register", async (req, res) => {
   const user = new User({
     name,
     email,
-    passwordHash,
+    password: passwordHash,
   });
 
   try {
@@ -90,46 +91,48 @@ app.post("/auth/register", async (req, res) => {
   } catch (error) {
     res.status(500).json({ msg: error });
   }
+
+  //Adicionar  verificação de e-mail 
 });
 
 app.post("/auth/login", async (req, res) => {
   const { email, password } = req.body;
 
-if (!email) {
-    return res.status(422).json({msg: "O email deve ser preenchido!" });
-}
+  if (!email) {
+    return res.status(422).json({ msg: "O email deve ser preenchido!" });
+  }
 
-if (!password) {
-    return res.status(422).json({msg: "A senha deve ser preenchida!" });
-}
+  if (!password) {
+    return res.status(422).json({ msg: "A senha deve ser preenchida!" });
+  }
 
-const user = await User.findOne({email: email});
+  const user = await User.findOne({ email: email });
 
-if  (!user) {
+  if (!user) {
     return res.status(404).json({ msg: "Usuário não contém cadastro!" });
-}
+  }
 
-const checkPassword = await bcrypt.compare(password, user.password);
+  const checkPassword = await bcrypt.compare(password, user.password);
 
-if (!checkPassword) {
+  if (!checkPassword) {
     return res.status(422).json({ msg: "Senha inválida!" });
-}
+  }
 
-//Criar um Env secret para evitar invasões
-try {
+  // Criar um Env secret para evitar invasões
+  try {
     const secret = process.env.SECRET;
 
     const token = jwt.sign(
-        {
-            id: user._id, // Cria um token JWT contendo a ID do User
-        },
-        secret
+      {
+        id: user._id, // Cria um token JWT contendo a ID do User
+      },
+      secret
     );
 
-    res.status(200).json({ msg: "A autenticação realizada com sucesso!", token });
-} catch (error) {
-    res. status(500).json({ msg: error });
-}
+    res.status(200).json({ msg: "Autenticação realizada com sucesso!", token });
+  } catch (error) {
+    res.status(500).json({ msg: error });
+  }
 });
 
 // Credenciais
